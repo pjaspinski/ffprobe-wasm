@@ -1,17 +1,30 @@
-<!DOCTYPE html>
-<html lang="en">
-  <head>
+
+<head>
     <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width,initial-scale=1.0">
-    <link rel="icon" href="<%= BASE_URL %>favicon.ico">
-    <title><%= htmlWebpackPlugin.options.title %></title>
-  </head>
-  <body>
-    <noscript>
-      <strong>We're sorry but <%= htmlWebpackPlugin.options.title %> doesn't work properly without JavaScript enabled. Please enable it to continue.</strong>
-    </noscript>
-    <div id="app"></div>
-    <!-- built files will be auto injected -->
-  </body>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <title>Getting FPS from m3u8 playlist with WASM ffprobe</title>
+</head>
+
+<body>
+    <input type="text" id="url" value="https://d22j3h1nrkyhk7.cloudfront.net/x/2ff3d4bdf105201618f21cc6d0c43834/ADOBE.m3u8">
+    <button onclick="get_fps()">Get FPS</button>
+    <p id="fps"></p>
+
+    <script>
+        const worker = new Worker('ffprobe-worker.js');
+        const input = document.getElementById("url");
+        const fpsText = document.getElementById("fps");
+
+        function get_fps() {
+            const url = input.value;
+            worker.postMessage(["get_file_info", url])
+        }
+
+        worker.onmessage = (e) => {
+          console.log(e.data)
+      }
+
+    </script>
+</body>
+
 </html>

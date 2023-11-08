@@ -1,19 +1,13 @@
 onmessage = (e) => {
     const type = e.data[0];
-    const file = e.data[1];
+    const url = e.data[1];
 
     let data;
 
     switch (type) {
         case 'get_file_info':
-            // Mount FS for files.
-            if (!FS.analyzePath('/work').exists) {
-                FS.mkdir('/work');
-            }
-            FS.mount(WORKERFS, { files: [file] }, '/work');
-
             // Call the wasm module.
-            const info = Module.get_file_info('/work/' + file.name);
+            const info = Module.get_file_info(url);
 
             // Remap streams into collection.
             const s = [];
@@ -51,9 +45,6 @@ onmessage = (e) => {
                 versions,
             }
             postMessage(data);
-
-            // Cleanup mount.
-            FS.unmount('/work');
             break;
         
         case 'get_frames':

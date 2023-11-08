@@ -88,23 +88,18 @@ typedef struct FramesResponse {
   double avg_frame_rate;
 } FramesResponse;
 
-FileInfoResponse get_file_info(std::string filename) {
+FileInfoResponse get_file_info(std::string playlistUrl) {
     av_log_set_level(AV_LOG_QUIET); // No logging output for libav.
 
-    FILE *file = fopen(filename.c_str(), "rb");
-    if (!file) {
-      printf("cannot open file\n");
-    }
-    fclose(file);
-
-    AVFormatContext *pFormatContext = avformat_alloc_context();
-    if (!pFormatContext) {
-      printf("ERROR: could not allocate memory for Format Context\n");
-    }
+    AVFormatContext *pFormatContext = NULL;
+    // AVFormatContext *pFormatContext = avformat_alloc_context();
+    // if (!pFormatContext) {
+    //   printf("ERROR: could not allocate memory for Format Context\n");
+    // }
 
     // Open the file and read header.
     int ret;
-    if ((ret = avformat_open_input(&pFormatContext, filename.c_str(), NULL, NULL)) < 0) {
+    if ((ret = avformat_open_input(&pFormatContext, playlistUrl.c_str(), NULL, NULL)) < 0) {
         printf("ERROR: %s\n", av_err2str(ret));
     }
 
@@ -124,78 +119,78 @@ FileInfoResponse get_file_info(std::string filename) {
       .nb_chapters = (int)pFormatContext->nb_chapters
     };
 
-    // Loop through the streams.
-    for (int i = 0; i < pFormatContext->nb_streams; i++) {
-      AVCodecParameters *pLocalCodecParameters = NULL;
-      pLocalCodecParameters = pFormatContext->streams[i]->codecpar;
+    // // Loop through the streams.
+    // for (int i = 0; i < pFormatContext->nb_streams; i++) {
+    //   AVCodecParameters *pLocalCodecParameters = NULL;
+    //   pLocalCodecParameters = pFormatContext->streams[i]->codecpar;
 
-      // Convert to char byte array.
-      uint32_t n = pLocalCodecParameters->codec_tag;
-      char fourcc[5];
-      for (int j = 0; j < 4; ++j) {
-        fourcc[j] = (n >> (j * 8) & 0xFF);
-      }
-      fourcc[4] = 0x00; // NULL terminator.
+    //   // Convert to char byte array.
+    //   uint32_t n = pLocalCodecParameters->codec_tag;
+    //   char fourcc[5];
+    //   for (int j = 0; j < 4; ++j) {
+    //     fourcc[j] = (n >> (j * 8) & 0xFF);
+    //   }
+    //   fourcc[4] = 0x00; // NULL terminator.
 
-      Stream stream = {
-        .id = (int)pFormatContext->streams[i]->id,
-        .start_time = (float)pFormatContext->streams[i]->start_time,
-        .duration = (float)pFormatContext->streams[i]->duration,
-        .codec_type = (int)pLocalCodecParameters->codec_type,
-        .codec_name = fourcc,
-        .format = av_get_pix_fmt_name((AVPixelFormat)pLocalCodecParameters->format),
-        .bit_rate = (float)pLocalCodecParameters->bit_rate,
-        .profile = avcodec_profile_name(pLocalCodecParameters->codec_id, pLocalCodecParameters->profile),
-        .level = (int)pLocalCodecParameters->level,
-        .width = (int)pLocalCodecParameters->width,
-        .height = (int)pLocalCodecParameters->height,
-        .channels = (int)pLocalCodecParameters->channels,
-        .sample_rate = (int)pLocalCodecParameters->sample_rate,
-        .frame_size = (int)pLocalCodecParameters->frame_size,
-      };
+    //   Stream stream = {
+    //     .id = (int)pFormatContext->streams[i]->id,
+    //     .start_time = (float)pFormatContext->streams[i]->start_time,
+    //     .duration = (float)pFormatContext->streams[i]->duration,
+    //     .codec_type = (int)pLocalCodecParameters->codec_type,
+    //     .codec_name = fourcc,
+    //     .format = av_get_pix_fmt_name((AVPixelFormat)pLocalCodecParameters->format),
+    //     .bit_rate = (float)pLocalCodecParameters->bit_rate,
+    //     .profile = avcodec_profile_name(pLocalCodecParameters->codec_id, pLocalCodecParameters->profile),
+    //     .level = (int)pLocalCodecParameters->level,
+    //     .width = (int)pLocalCodecParameters->width,
+    //     .height = (int)pLocalCodecParameters->height,
+    //     .channels = (int)pLocalCodecParameters->channels,
+    //     .sample_rate = (int)pLocalCodecParameters->sample_rate,
+    //     .frame_size = (int)pLocalCodecParameters->frame_size,
+    //   };
 
-      // Add tags to stream.
-      const AVDictionaryEntry *tag = NULL;
-      while ((tag = av_dict_get(pFormatContext->streams[i]->metadata, "", tag, AV_DICT_IGNORE_SUFFIX))) {
-        Tag t = {
-          .key = tag->key,
-          .value = tag->value,
-        };
-        stream.tags.push_back(t);
-      }
+    //   // Add tags to stream.
+    //   const AVDictionaryEntry *tag = NULL;
+    //   while ((tag = av_dict_get(pFormatContext->streams[i]->metadata, "", tag, AV_DICT_IGNORE_SUFFIX))) {
+    //     Tag t = {
+    //       .key = tag->key,
+    //       .value = tag->value,
+    //     };
+    //     stream.tags.push_back(t);
+    //   }
 
-      r.streams.push_back(stream);
-      free(fourcc);
-    }
+    //   r.streams.push_back(stream);
+    //   free(fourcc);
+    // }
 
-    // Loop through the chapters (if any).
-    for (int i = 0; i < pFormatContext->nb_chapters; i++) {
-      AVChapter *chapter = pFormatContext->chapters[i];
+    // // Loop through the chapters (if any).
+    // for (int i = 0; i < pFormatContext->nb_chapters; i++) {
+    //   AVChapter *chapter = pFormatContext->chapters[i];
 
-      // Format timebase string to buf.
-      AVBPrint buf;
-      av_bprint_init(&buf, 0, AV_BPRINT_SIZE_AUTOMATIC);
-      av_bprintf(&buf, "%d%s%d", chapter->time_base.num, (char *)"/", chapter->time_base.den);
+    //   // Format timebase string to buf.
+    //   AVBPrint buf;
+    //   av_bprint_init(&buf, 0, AV_BPRINT_SIZE_AUTOMATIC);
+    //   av_bprintf(&buf, "%d%s%d", chapter->time_base.num, (char *)"/", chapter->time_base.den);
 
-      Chapter c = {
-        .id = (int)chapter->id,
-        .time_base = buf.str,
-        .start = (float)chapter->start,
-        .end = (float)chapter->end,
-      };
+    //   Chapter c = {
+    //     .id = (int)chapter->id,
+    //     .time_base = buf.str,
+    //     .start = (float)chapter->start,
+    //     .end = (float)chapter->end,
+    //   };
 
-      // Add tags to chapter.
-      const AVDictionaryEntry *tag = NULL;
-      while ((tag = av_dict_get(chapter->metadata, "", tag, AV_DICT_IGNORE_SUFFIX))) {
-        Tag t = {
-          .key = tag->key,
-          .value = tag->value,
-        };
-        c.tags.push_back(t);
-      }
+    //   // Add tags to chapter.
+    //   const AVDictionaryEntry *tag = NULL;
+    //   while ((tag = av_dict_get(chapter->metadata, "", tag, AV_DICT_IGNORE_SUFFIX))) {
+    //     Tag t = {
+    //       .key = tag->key,
+    //       .value = tag->value,
+    //     };
+    //     c.tags.push_back(t);
+    //   }
 
-      r.chapters.push_back(c);
-    }
+    //   r.chapters.push_back(c);
+    // }
 
     avformat_close_input(&pFormatContext);
     return r;
